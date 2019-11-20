@@ -1,0 +1,39 @@
+#text-container {
+    position: relative;
+    top: 50px;
+    left: 20%;
+    width: 60%;
+}
+
+#text-content{
+    background: #FFFFFF;
+    font-size: 16px;
+    padding: 10px 20px;
+    transition: .3s;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(232, 232, 232);
+    border-radius: 5px;
+    text-indent: 32px;
+}
+
+#text-content:hover {
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    border-radius: 5px;
+}
+
+#text-content div {
+    transition: .3s;
+}
+
+#text-content div:hover {
+    background: #F0F0F0;
+}
+
+#text-title {
+    text-align: center;
+    font-size: 1.5em;
+    margin: 20px 0;
+}

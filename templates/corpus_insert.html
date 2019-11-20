@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}语料库{% endblock %}
+{% block css %}<link href="{% static 'css/corpus_insert.css' %}" rel="stylesheet"> {% endblock %}
+
+
+{% block content %}
+         <script>
+            var focus_elem = '';
+            var input_elem = '';
+            var textarea_elem = '';
+            var forever_elem = '';
+            var document_id = '0';
+            var data = '';
+            var data_str = '';
+            var table_cache = '';
+
+            window.onload = function (ev) {
+                table_cache = $("#main_container").html();
+                {#console.log(table_cache);#}
+
+                document.getElementById("read_file").onchange=function (ev2) {
+                    var files = this.files;
+                    var text = '';
+                    if(files.length!==1) alert("请选择1个文件");
+                    else{
+                        var reader = new FileReader();
+                        reader.readAsText(files[0], "utf-8");
+                        reader.onload=function (ev3) {
+                            text = this.result;
+                            var link = "{% url 'corpus:file' %}";
+                            $.post(link, text, function (json_str) {
+                                data_str = json_str;
+                                console.log(JSON.stringify(json_str));
+                                var data_json = JSON.parse(data_str);
+                                reset_table();
+                                load_table_view(data_json);
+                                table_view();
+                            });
+                        };
+                    }
+                };
+
+                focus_elem = $("#document_attr span:first");
+                input_elem = $("#forever_input");
+                textarea_elem = $("#forever_textarea");
+                forever_elem = $(".forever_input");
+                autosize(textarea_elem);
+
+               $(document).click(function (e) {
+                    if(focus_elem.attr("class").indexOf("category")<=0){
+                        $(".list-group").css("z-index", -500)
+                    }
+                    if (e.target !== focus_elem[0])
+                        $(".list-group").css("z-index", -500)
+                });
+
+
+                select();
+                locate_input();
+                locate_list();
+                input_elem.focus();
+
+                var text = focus_elem.text();
+                var pos_split = text.indexOf('：');
+                var attr = text.substring(0, pos_split);
+                var value = text.substring(pos_split+1);
+                forever_elem.val(value);
+                forever_elem.attr({"placeholder": attr});
+
+
+                var list_elem = $(".list-group");
+                $("#overwrite").click(function () {
+                    if ($(this).attr("class").indexOf("active")>=0) $(this).removeClass("active");
+                    else $(this).addClass("active");
+                    set_default();
+                });
+                list_elem.children("a").click(function () {
+                    input_elem.val($(this).text());
+                    focus_elem.text("类别："+$(this).text());
+                    input_elem.blur();
+                    list_elem.children("a").removeClass("active");
+                    list_elem.css("z-index",-100);
+                });
+
+                //insert
+                if(data_str==="") data_str = "{{ data|safe }}";
+                if (data_str===""){
+                    add_section($("#section_0"), true);
+                    event_binding();
+                    return;
+                }
+
+                //update
+                try {
+                    console.log(JSON.stringify(data_str));
+                    data = JSON.parse(data_str);
+                    for (var i in data){
+                        document_id = i;
+                        break;
+                    }
+                    load_table_view(data);
+                }
+                catch (e){
+                    console.log(e);
+                    if (e instanceof SyntaxError){
+                        alert('数据获取错误');
+                        window.location.href = "{% url 'corpus:manage' %}";
+                    }
+                    else{
+                        alert('未知错误');
+                        window.location.href = "{% url 'corpus:manage' %}";
+                    }
+                }
+
+                event_binding();
+            };
+        </script>
+
+    {% if data %}
+        <script src="{% static 'bootstrap-3.3.7-dist/js/jquery-3.3.1.min.js' %}"></script>
+    {% endif %}
+    <input type="text" class="forever_input" id="forever_input" style="position: absolute">
+    <textarea class="forever_input" id="forever_textarea" style="position: absolute;"></textarea>
+    <div id="shelter"></div>
+    <div class="list-group" style="position: absolute; z-index: -100;">
+        <a href="#" class="list-group-item">原文</a>
+        <a href="#" class="list-group-item">义疏</a>
+        <a href="#" class="list-group-item">注解</a>
+    </div>
+    {% csrf_token %}
+    <div class="container-fluid row" id="main_div" style="background: white">
+        <div class="col-md-offset-1 col-md-10" id="main_container">
+            <table class="table table-hover col-md-12" id="document_table">
+                <tr id="tr_default">
+                    <td class="tag_width center">默认</td>
+                    <td class="col-md-1" colspan="2"><button class="btn btn-default btn-xs" id="overwrite">覆盖内容</button></td>
+{#                    <td class="tag_width"></td>#}
+                    <td>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_1 default_title">标题：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_2 default_author">作者：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_3 default_dynasty">时期：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_4 default_category">类别：</span>
+                    </td>
+                </tr>
+                <tr class="tr_btn" id="section_0">
+                    <td class="center">文档</td>
+                    <td class="center"></td>
+                    <td class="center"></td>
+                    <td id="document_attr">
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_1 title">标题：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_2 author">作者：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_3 dynasty">时期：</span>
+                        <span onclick="edit(this, 0)" class="text_span col-md-2 sp_4 category">类别：</span>
+                        <div class="btn-group btn_config">
+                            <button class="btn btn-default btn-xs" type="button" onclick="add_section($(this).parent().parent().parent(), true)">章</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <div class="hidden col-md-offset-2 col-md-8" id="document_display" style="z-index: 2"></div>
+            <div class="col-md-12" style="z-index: 2">
+                <button class="btn btn-default pull-right" onclick="data_submit(gather_data(), '{% url 'corpus:insert' %}')">提交</button>
+                <button class="btn btn-default pull-right" style="margin-right: 3%;" onclick="window.location.reload()">重置</button>
+                <button class="btn btn-default pull-right" id="view_button" style="margin-right: 3%;" onclick="load_text_view(gather_data());text_view()">文本视图</button>
+                <input type="file" class="pull-right" id="read_file" style="margin-right: 3%;">
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block js %}
+    <script src="{% static 'js/create_document.js' %}"></script>
+    <script src="{% static 'js/autosize.js' %}"></script>
+{#    <script>autosize(document.querySelectorAll('textarea'));</script>#}
+{% endblock %}

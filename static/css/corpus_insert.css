@@ -1,0 +1,84 @@
+body{
+    background: white;
+}
+
+table {
+    z-index: 2;
+    cursor: default;
+}
+
+span {
+    border-radius: 3px;
+}
+
+textarea {
+    padding: 10px;
+    vertical-align: top;
+    width: 200px;
+    resize: none;
+}
+
+textarea:focus {
+    outline-style: solid;
+    outline-width: 2px;
+}
+
+.hidden{
+    position: absolute;
+    visibility: hidden;
+}
+
+.center{
+    text-align: center;
+}
+
+.tag_width{
+    width: 4.16666667%;
+}
+
+.btn_config{
+    position: absolute;
+    right: 0;
+    visibility: hidden;
+}
+
+.tr_btn:hover .btn_config{
+    visibility: visible;
+}
+
+.section_title{
+    display: block;
+    font-weight:bold;
+}
+
+.zhu{
+    color: darkred;
+}
+
+.shu{
+    color: #2b669a;
+}
+
+#document_display{
+    font-size: 125%;
+}
+
+#shelter{
+    position: fixed;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    background: inherit;
+}
+
+
+#main_div{
+    position: relative;
+    top: 100px;
+}
+
+#overwrite:hover, #overwrite:focus{
+    box-shadow: none;
+}

@@ -1,0 +1,55 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>{% block title %}base{% endblock %}</title>
+
+    <link href="{% static 'bootstrap-3.3.7-dist/css/bootstrap.css' %}" rel="stylesheet">
+    {% block css %}{% endblock %}
+
+  </head>
+  <body>
+    {% if request.session.login_name %}
+        <input type="hidden" id="user_name" value="{{ request.session.login_name }}">
+    {% endif %}
+    <nav class="nav navbar-default">
+        <div class="container-fluid row">
+            <div class="navbar-header col-md-1">
+            </div>
+            <ul class="nav navbar-nav col-md-11">
+                <li><a href="{% url 'corpus:search' %}">语料库</a></li>
+{#                {% if request.session.login_name %}#}
+{#                    <li><a href="{% url 'corpus:manage' %}">语料库管理</a></li>#}
+{#                    <li><a href="{% url 'user:manage' %}">用户管理</a></li>#}
+{#                {% endif %}#}
+                <li><a href="{% url 'corpus:readme' %}">使用说明</a></li>
+                <li><a href="{% url 'corpus:download_readme' %}">下载使用说明文档</a></li>
+                <li><a id="back-front-url" href="http://120.78.71.214:8000/">后台管理</a></li>
+{#                {% if request.session.login_name %}#}
+{#                    <li class="pull-right"><a href="{% url 'user:logout' %}">退出登录</a></li>#}
+{#                    <li class="pull-right"><a> | </a></li>#}
+{#                    <li class="pull-right"><a>{{ request.session.login_name }}</a></li>#}
+{#                {% else %}#}
+{#                    <li class="pull-right"><a href="{% url 'user:login' %}">登录</a></li>#}
+{#                {% endif %}#}
+            </ul>
+        </div>
+    </nav>
+
+    <script>
+        var baseHost = window.location.hostname;
+        document.getElementById("back-front-url").setAttribute("href", "http://" + baseHost + ":8000")
+    </script>
+
+    {% block content %}{% endblock %}
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="{% static 'bootstrap-3.3.7-dist/js/jquery-3.3.1.min.js' %}"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{% static 'bootstrap-3.3.7-dist/js/bootstrap.js' %}"></script>
+    {% block js %}{% endblock %}
+  </body>
+</html>

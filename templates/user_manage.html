@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}语料库{% endblock %}
+{% block css %}<link href="{% static 'css/corpus_insert.css' %}" rel="stylesheet"> {% endblock %}
+
+
+{% block content %}
+    <script>
+        var input_id = 0;
+        var input_type = 0;
+        window.onload = function (ev) {
+            input_id = $("#login_name");
+            input_type = $("#type");
+        };
+
+        function type_update(id) {
+            input_id.attr({'value': id});
+            input_type.attr({"value": 0});
+            return true;
+        }
+        function type_delete(id) {
+            input_id.attr({'value': id});
+            input_type.attr({"value": 1});
+            return true;
+        }
+        function type_add() {
+            input_type.attr({"value": 2});
+        }
+
+    </script>
+    <div class="container-fluid" style="position: relative; top: 100px">
+        <h2 style="text-align: center; color: #555555;">用户管理</h2><br><br><br>
+        <div class="col-md-offset-2 col-md-8">
+            {% if msg %}
+                <div class="alert alert-info text-center">
+                    {{ msg }}
+                </div>
+            {% endif %}
+            <form action="{% url 'user:manage_render' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="login_name" name="login_name" value="0">
+                <input type="hidden" id="type" name="type" value="0">
+                <table class="table table-hover col-md-12">
+                    <tr>
+                        <th>用户</th>
+                        <th>权限</th>
+                        <th>操作</th>
+                    </tr>
+                    {% for line in info %}
+                    <tr>
+                        <td>{{ line.login_name }}</td>
+                        <td>{{ line.authority }}</td>
+                        <td>
+                            <input class="btn btn-default btn-xs" type="submit" onclick="type_update('{{ line.login_name }}')" value="修改">
+                            <input class="btn btn-default btn-xs" type="submit" onclick="type_delete('{{ line.login_name }}')" value="删除">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </form>
+            <button class="btn btn-default pull-right"><a href="{% url 'user:add' %}">新增用户</a></button>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+{% endblock %}

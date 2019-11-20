@@ -1,0 +1,14 @@
+T__0=1
+WORD=2
+FIELD=3
+SPL=4
+KEY1=5
+KEY2=6
+KEY3=7
+IMP=8
+ID=9
+INT=10
+WS=11
+':'=1
+'#'=5
+'!'=8
