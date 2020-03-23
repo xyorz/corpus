@@ -29,6 +29,11 @@ class CommandParser(object):
         self._key = v.getKey()
         self._num = v.getNum()
         self._impWord = v.getImpWord()
+        self._keyWordList = []
+        for i in self._wordList:
+            for j in i:
+                for k in j:
+                    self._keyWordList.append(k)
         self._fields = v.getFields()
 
     def getWordList(self):
@@ -45,6 +50,9 @@ class CommandParser(object):
 
     def getFields(self):
         return self._fields
+
+    def getKeyWordList(self):
+        return self._keyWordList
 
 
 # if __name__ == '__main__':

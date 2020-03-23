@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__))+'/antlr')
 sys.path.append('./pattern_search/antlr')
 from PatternParser import PatternParser
 from PatternLexer import PatternLexer
-from PatternEvalVisitor import PatternEvalVisitor
+from NewPatternEvalVisitor import PatternEvalVisitor
 
 
 class PatternErrorListener(ErrorListener):

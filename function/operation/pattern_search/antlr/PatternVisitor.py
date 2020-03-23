@@ -19,18 +19,8 @@ class PatternVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PatternParser#OP1.
-    def visitOP1(self, ctx:PatternParser.OP1Context):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PatternParser#OP2.
-    def visitOP2(self, ctx:PatternParser.OP2Context):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PatternParser#id.
-    def visitId(self, ctx:PatternParser.IdContext):
+    # Visit a parse tree produced by PatternParser#OP0.
+    def visitOP0(self, ctx:PatternParser.OP0Context):
         return self.visitChildren(ctx)
 
 

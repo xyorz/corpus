@@ -3,12 +3,11 @@ grammar Pattern;
 prog : expr SPL field
      ;
 
-expr :  WORD '(' req ')' expr?
+expr : '(' req ')' expr?
+     | WORD expr?
      ;
 
-req : ID ',' op=('>'|'<'|'=') INT   # OP1
-    | ID ',' INT op='-' INT         # OP2
-    | ID                            # id
+req : ID ((LES INT)|(EQU INT)|(INT SCO INT))?   # OP0
     ;
 
 field: FIELD ':' WORD  (SPL WORD)* SPL? field #FIELD0
@@ -24,4 +23,5 @@ MOR  : '>' ;
 LES  : '<' ;
 EQU  : '=' ;
 SCO  : '-' ;
+SPC  : ' ' ;
 WS   : [\t\r\n]+ -> skip ;

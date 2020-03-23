@@ -9,7 +9,7 @@ from PatternEvalVisitor import PatternEvalVisitor
 
 
 class CommandParser(object):
-    def __init__(self, cmd: str):
+    def __init__(self, cmd: str, zh_to_hant_dict: dict = None):
         i = InputStream(cmd)
         lexer = PatternLexer(i)
         stream = CommonTokenStream(lexer)
@@ -18,7 +18,7 @@ class CommandParser(object):
             tree = parser.prog()
         else:
             tree = parser.expr()
-        v = PatternEvalVisitor()
+        v = PatternEvalVisitor(zh_to_hant_dict)
         res = v.visit(tree)
 
         self._re = res
@@ -34,8 +34,9 @@ class CommandParser(object):
     def getFields(self):
         return self._fields
 
-# if __name__ == '__main__':
+
+if __name__ == '__main__':
     # print(pattern('爱(v,=5)不(t)'))
-    # print(Token('是(v,<5)沒(t) author:我的').getRe())
+    print(CommandParser('画(v,<5)沒(v) author:我的', {"画": ["畵"]}).getRe())
     # t('爱(v,=5??)不(v)')
     # print()

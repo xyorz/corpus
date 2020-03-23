@@ -20,6 +20,6 @@ import sys
 sys.path.append("apps")
 
 urlpatterns = [
-    path('', views.corpus_search, name='search'),
+    path('', views.search, name='search'),
     path('corpus/', include('dmdb.urls', namespace='corpus')),
 ]

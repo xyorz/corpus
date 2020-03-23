@@ -26,30 +26,12 @@ class PatternListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by PatternParser#OP1.
-    def enterOP1(self, ctx:PatternParser.OP1Context):
+    # Enter a parse tree produced by PatternParser#OP0.
+    def enterOP0(self, ctx:PatternParser.OP0Context):
         pass
 
-    # Exit a parse tree produced by PatternParser#OP1.
-    def exitOP1(self, ctx:PatternParser.OP1Context):
-        pass
-
-
-    # Enter a parse tree produced by PatternParser#OP2.
-    def enterOP2(self, ctx:PatternParser.OP2Context):
-        pass
-
-    # Exit a parse tree produced by PatternParser#OP2.
-    def exitOP2(self, ctx:PatternParser.OP2Context):
-        pass
-
-
-    # Enter a parse tree produced by PatternParser#id.
-    def enterId(self, ctx:PatternParser.IdContext):
-        pass
-
-    # Exit a parse tree produced by PatternParser#id.
-    def exitId(self, ctx:PatternParser.IdContext):
+    # Exit a parse tree produced by PatternParser#OP0.
+    def exitOP0(self, ctx:PatternParser.OP0Context):
         pass
 
 

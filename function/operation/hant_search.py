@@ -16,6 +16,16 @@ def get_zh_to_hant_list(input: str, zh_to_hant_map):
     return transform_list
 
 
+def get_zh_to_hant_map_from_db(zh_to_hant_query_result):
+    result = {}
+    for r in zh_to_hant_query_result:
+        if r.zh not in result:
+            result[r.zh] = [r.hant]
+        else:
+            result[r.zh].append(r.hant)
+    return result
+
+
 def get_res(input, zh_to_hant_list, index):
     if index > len(input)-1:
         return ['']
@@ -44,3 +54,15 @@ def get_res_list(input, zh_to_hant_map):
     if not (len(res_list) == 1 and res_list[0] == input):
         res_list.insert(0, input)
     return res_list
+
+
+def combine_search_result(hant_search_res):
+    total = 0
+    doc_list = []
+    for res in hant_search_res:
+        total += res["total"]
+        doc_list += res["doc_list"]
+    return {
+        "total": total,
+        "doc_list": doc_list
+    }

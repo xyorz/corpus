@@ -1,4 +1,4 @@
-import sys, os, urllib, lucene
+import sys, os
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.document import Document, Field, FieldType, StringField, TextField
@@ -6,7 +6,6 @@ from org.apache.lucene.index import \
     FieldInfo, IndexWriter, IndexWriterConfig, IndexOptions, DirectoryReader, IndexReader, Term
 from org.apache.lucene.search import RegexpQuery
 from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.search import IndexSearcher
 sys.path.append(os.path.dirname(os.path.abspath(__file__))+'/../')
 
 
@@ -15,8 +14,8 @@ class IndexUpdate(object):
         self._dir = indexDir
         self._data = {}
         self._counter = '0'
+        # 新建文本
         if '0' in data.keys():
-            # 新建文本
             self._counter = documentCount
             keys = data.keys()
             for key in list(keys):
@@ -26,6 +25,7 @@ class IndexUpdate(object):
                     id_new = self._counter + '.' + key[key.find('.') + 1:]
                 data[id_new] = data[key]
                 del data[key]
+        # 更新文本
         else:
             for key in data.keys():
                 if key.count('.') == 0:
@@ -43,6 +43,9 @@ class IndexUpdate(object):
             document = Document()
             document.add(Field('id', key, StringField.TYPE_STORED))
             for k, v in val.items():
+                if k == "detail":
+                    print("key:" + k)
+                    print("value:" + v)
                 if v:
                     if k == 'text':
                         document.add(Field('text', v, TextField.TYPE_STORED))

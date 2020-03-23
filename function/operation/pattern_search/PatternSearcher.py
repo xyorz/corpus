@@ -8,8 +8,8 @@ from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.core import KeywordAnalyzer
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from PatternCommandParser import CommandParser
-from org.apache.lucene.analysis.cjk import CJKAnalyzer
 from function.operation.Content import get_detail, add_tag
+
 
 class PatternSearcher(object):
     def __init__(self, searchWord: str, indexDir: str):

@@ -6,12 +6,16 @@ from PatternVisitor import PatternVisitor
 from PatternParser import PatternParser
 from PatternLexer import PatternLexer
 
+
 class PatternEvalVisitor(PatternVisitor):
-    def __init__(self):
+    def __init__(self, zh_to_hant_dict=None):
         self.count = 0
         self.memory = {}
         self._fields = {}
         self._words = []
+        if not zh_to_hant_dict:
+            zh_to_hant_dict = {}
+        self._zh_to_hant_dict = zh_to_hant_dict
 
     def visitProg(self, ctx:PatternParser.ProgContext):
         self.visit(ctx.field())
@@ -21,11 +25,22 @@ class PatternEvalVisitor(PatternVisitor):
         if not ctx.WORD():
             return ''
         self._words.append(ctx.WORD().getText())
-        if ctx.expr():
-            return ctx.WORD().getText() + self.visit(ctx.req()) + self.visit(ctx.expr())
+        word = ctx.WORD().getText()
+        d = self._zh_to_hant_dict
+        if d:
+            word_res = "["
+            for w in word:
+                word_res += w
+                if w in d:
+                    for hant in d[w]:
+                        word_res += hant
+            word_res += "]"
         else:
-            return ctx.WORD().getText() + self.visit(ctx.req())
-
+            word_res = word
+        if ctx.expr():
+            return word_res + self.visit(ctx.req()) + self.visit(ctx.expr())
+        else:
+            return word_res + self.visit(ctx.req())
 
     def visitOP1(self, ctx:PatternParser.OP1Context):
         op = ctx.op.type

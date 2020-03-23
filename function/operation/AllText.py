@@ -19,5 +19,5 @@ def get_ancient_content(id, dir):
     for hit in hits.scoreDocs:
         doc = searcher.doc(hit.doc)
         text = doc.get('text')
-
     return doc
+
