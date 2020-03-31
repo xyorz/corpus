@@ -2,14 +2,13 @@
 from function.operation import Content
 from function.operation.corpus_search.NewCorpusSeacher import Searcher as NSearcher
 from function.operation.pattern_search.NewPatternSearcher import Searcher as NPSearcher
-from function.operation.corpus_search.CorpusCommandParser import CommandParser as CorpusCommandParser
-from function.operation.pattern_search.NewPatternCommandParser import CommandParser as PatternCommandParser
 from function.operation.corpus_search.CorpusErrorReporter import CorpusErrorReporter
 from function.operation.pattern_search.PatternErrorReporter import PatternErrorReporter
 from function.operation.IndexUpdate import IndexUpdate
 from function.operation import IndexDelete
 from function.operation.DocumentsDisplay import CorpusDocList, DocumentData
 from django.http import JsonResponse, FileResponse
+from django.utils.encoding import escape_uri_path
 import lucene, json, sys, threading, traceback
 
 from dmdb.models import AuthorsInfo
@@ -50,7 +49,7 @@ def search(request):
                     "error": True,
                     "message": listener.getMessage()
                 })
-            results = NSearcher(CorpusCommandParser(keyword), ancient_index_dir, zh_to_hant_map)\
+            results = NSearcher(keyword, ancient_index_dir, zh_to_hant_map)\
                 .search("text").get_by_page(page, page_size, length_tup=(left_length, right_length))
         else:
             listener = PatternErrorReporter(keyword)
@@ -59,7 +58,7 @@ def search(request):
                     "error": True,
                     "message": listener.getMessage()
                 })
-            results = NPSearcher(PatternCommandParser(keyword), ancient_index_dir, zh_to_hant_map)\
+            results = NPSearcher(keyword, ancient_index_dir, zh_to_hant_map)\
                 .search('text').get_by_page(page, page_size, length_tup=(left_length, right_length))
         return JsonResponse(results)
     else:
@@ -131,7 +130,33 @@ def new_get_content(request):
     return JsonResponse(content)
 
 
-# 包括新增和更新操作，通过传上来的json数据的id来判断。(0是新增，>0是更新)
+def get_res_statistics(request):
+    initVM()
+    body = json.loads(request.body.decode('utf-8'))
+    type = body["type"]
+    keyword = body["keyword"]
+    if "field" in body.keys():
+        field = body["field"]
+    else:
+        field = None
+    if type == "normal":
+        searcher = NSearcher(keyword, ancient_index_dir, zh_to_hant_map).search("text")
+        if field:
+            res_dict = searcher.get_result_statistics_by_field(field)
+        else:
+            res_dict = searcher.get_result_statistics_by_keyword()
+    else:
+        searcher = NPSearcher(keyword, ancient_index_dir, zh_to_hant_map).search("text")
+        if field:
+            res_dict = searcher.get_result_statistics_by_field(field)
+        else:
+            res_dict = searcher.get_result_statistics_by_keyword()
+    return JsonResponse({
+        "dict": res_dict
+    })
+
+
+# id=0新增，>0修改
 def corpus_insert(request):
     if request.method == "POST":
         initVM()
@@ -305,8 +330,6 @@ def login(request):
             body = json.loads(request.body.decode('utf-8'))
             username = body['username']
             password = body['password']
-            print(username)
-            print(password)
             user = User.objects.all().filter(name=username, pwd=password).first()
 
             if user:

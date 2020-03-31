@@ -7,14 +7,14 @@ from org.apache.lucene.index import DirectoryReader, Term
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(__file__ + '../../')))
 from CorpusCommandParser import CommandParser
-from Content import new_get_content
+from Content import new_get_content, get_text_from_content
 
 index_dir = "../../index/index_ancient"
 index_dir_server = "./function/index/index_ancient"
 
 
 class Searcher(object):
-    def __init__(self, userQuery: CommandParser, directory: str, zh_to_hant_dict=None):
+    def __init__(self, userQuery: str, directory: str, zh_to_hant_dict=None):
         d = SimpleFSDirectory(Paths.get(directory))
         if zh_to_hant_dict:
             self._zh_to_hant_dict = zh_to_hant_dict
@@ -22,7 +22,7 @@ class Searcher(object):
             self._zh_to_hant_dict = {}
         self._dir = directory
         self._search = IndexSearcher(DirectoryReader.open(d))
-        self._userQuery = userQuery
+        self._userQuery = CommandParser(userQuery)
         self._res = None
         self._cur_field = None
 
@@ -81,7 +81,7 @@ class Searcher(object):
             tq = TermQuery(Term(key, filters[key][0]))
             bq.add(BooleanClause(tq, BooleanClause.Occur.MUST))
         query = bq.build()
-        self._res = s.search(query, 9999)
+        self._res = s.search(query, 100000)
         self._cur_field = field
         return self
 
@@ -96,11 +96,7 @@ class Searcher(object):
         # 用户检索语句中的所有关键词
         key_word_list = self._userQuery.getKeyWordList()
         # 关键字简繁处理
-        for word in key_word_list:
-            for w in word:
-                if w in zh_to_hant_dict:
-                    for hant in zh_to_hant_dict[w]:
-                        key_word_list.append(word.replace(w, hant))
+        key_word_list = key_word_list_add_hant(zh_to_hant_dict, key_word_list)
         doc_list = []
         total_hits = top_docs.totalHits
         hits = top_docs.scoreDocs
@@ -129,7 +125,7 @@ class Searcher(object):
                         break
             if not mid_pos:
                 mid_pos = [0, 0]
-            context = new_get_content(d, cur_id)
+            context = get_text_from_content(new_get_content(d, cur_id))
             prev_len = len(context["prev"][-1])
             str_context = context["prev"][-1] + context["cur"][0] + context["next"][0]
             mid_pos = (prev_len + mid_pos[0], prev_len + mid_pos[1])
@@ -143,18 +139,41 @@ class Searcher(object):
             else:
                 right = str_context[mid_pos[1]: mid_pos[1]+length_tup[1]]
             doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id})
-        return {"total": total_hits, "doc_list": doc_list}
+        return {"total": total_hits, "doc_list": doc_list, "keywords": key_word_list}
 
-    def max_query_test(self):
+    def get_result_statistics_by_keyword(self):
         s = self._search
-        max_length = 100000
-        query_list = []
-        bq = BooleanQuery.Builder()
-        for i in range(max_length):
-            bc1 = BooleanClause(SpanTermQuery(Term("text", str(i))), BooleanClause.Occur.SHOULD)
-            bq.add(bc1)
-        query = bq.build()
-        hits = s.search(query, 99999)
+        top_docs = self._res
+        zh_to_hant_dict = self._zh_to_hant_dict
+        key_word_list = self._userQuery.getKeyWordList()
+        key_word_list = key_word_list_add_hant(zh_to_hant_dict, key_word_list)
+        res_dict = {}
+        hits = top_docs.scoreDocs
+        for hit in hits:
+            doc = s.doc(hit.doc)
+            text = doc.get("text")
+            for word in key_word_list:
+                if text.find(word) >= 0:
+                    if word in res_dict.keys():
+                        res_dict[word] += 1
+                    else:
+                        res_dict[word] = 1
+        return res_dict
+
+    def get_result_statistics_by_field(self, field):
+        s = self._search
+        top_docs = self._res
+        res_dict = {}
+        hits = top_docs.scoreDocs
+        for hit in hits:
+            doc = s.doc(hit.doc)
+            field_val = doc.get(field)
+            if field_val:
+                if field_val in res_dict.keys():
+                    res_dict[field_val] += 1
+                else:
+                    res_dict[field_val] = 1
+        return res_dict
 
 
 # 简单项转换为spanQuery
@@ -192,6 +211,15 @@ def simple_term_to_query(field, word_list, zh_to_hant_dict=None):
     return SpanNearQuery(soq_list, 999, False)
 
 
+def key_word_list_add_hant(zh_to_hant_dict, key_word_list):
+    for word in key_word_list:
+        for w in word:
+            if w in zh_to_hant_dict:
+                for hant in zh_to_hant_dict[w]:
+                    key_word_list.append(word.replace(w, hant))
+    return key_word_list
+
+
 def initVM():
     vm_env = lucene.getVMEnv()
     if vm_env:
@@ -202,14 +230,14 @@ def initVM():
 
 if __name__ == '__main__':
     # uc = "復凡人#0皆必先習 每三過自視"
-    uc = "论語義疏"
+    # uc = "论語義疏"
     # uc = "豈可不經-3妄傳之乎"
     # uc = "妄傳之乎~4豈可不經"
-    # uc = "能致|吾"
+    uc = "能致|吾|我"
     initVM()
     # uc = "基立而後可大成也"
     st = time.time()
     ucp = CommandParser(uc)
-    Searcher(ucp, index_dir).search('text').max_query_test()
+    print(Searcher(ucp, index_dir).search('text').get_result_statistics_by_field("author"))
     et = time.time()
     print('const:' + str(et - st))

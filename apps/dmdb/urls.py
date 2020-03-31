@@ -3,11 +3,11 @@ from dmdb import views
 
 app_name = 'dmdb'
 urlpatterns = [
-    # path('search/', views.corpus_search, name='search'),
     path('n_search/', views.search, name='n_search'),
     path('download_readme/', views.download_readme, name='download_readme'),
     path('download_backend_readme/', views.download_backend_readme, name='download_backend_readme'),
     path('get_context/', views.new_get_content),
+    path('get_res_statistics/', views.get_res_statistics),
     path('insert/', views.corpus_insert, name='insert'),
     path('manage/', views.corpus_manage, name='manage'),
     path('doc/', views.doc, name='doc'),

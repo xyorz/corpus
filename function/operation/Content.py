@@ -13,18 +13,25 @@ def new_get_content(dir, id, show_length=300):
     query = TermQuery(Term("id", ".".join([str(x) for x in cur_id_list])))
     hit = searcher.search(query, 1)
     doc = searcher.doc(hit.scoreDocs[0].doc)
-    text_cur = [doc.get("text")]
+    info_dict = {}
+    for field_info in doc.getFields():
+        info_dict[field_info.name()] = field_info.stringValue()
+    text_cur = [[info_dict]]
     text_prev = []
     cur_id_list[2] -= 1
     while list_text_len(text_prev) < show_length and cur_id_list[1] >= 1:
-        para_text = ""
+        para_info = []
         while cur_id_list[2] >= 1:
             query = TermQuery(Term("id", ".".join([str(x) for x in cur_id_list])))
             hit = searcher.search(query, 1)
             doc = searcher.doc(hit.scoreDocs[0].doc)
-            para_text = doc.get("text") + para_text
+            info_dict = {}
+            for field_info in doc.getFields():
+                info_dict[field_info.name()] = field_info.stringValue()
+            para_info.insert(0, info_dict)
+            # para_text = doc.get("text") + para_text
             cur_id_list[2] -= 1
-        text_prev.insert(0, para_text)
+        text_prev.insert(0, para_info)
         cur_id_list[1] -= 1
         query = RegexpQuery(Term("id", str(cur_id_list[0]) + "\\." + str(cur_id_list[1]) + "\\..+"))
         hits = searcher.search(query, 99999)
@@ -36,7 +43,23 @@ def new_get_content(dir, id, show_length=300):
                 s_id_max = s_id
         cur_id_list[2] = s_id_max
     if len(text_prev) > 0 and list_text_len(text_prev) >= show_length:
-        text_prev[0] = text_prev[0][list_text_len(text_prev)-show_length:]
+        over_count = list_text_len(text_prev) - show_length
+        len_count = 0
+        para_count = 0
+        new_para = []
+        while True:
+            text = text_prev[0][para_count]["text"]
+            prev_len = len_count
+            len_count += len(text)
+            if len_count > over_count:
+                text = text[over_count-prev_len:]
+                text_prev[0][para_count]["text"] = text
+                break
+            para_count += 1
+        while para_count < len(text_prev[0]):
+            new_para.insert(0, text_prev[0][para_count])
+            para_count += 1
+        text_prev[0] = new_para
     cur_id_list = [int(x) for x in id.split(".")]
     text_next = []
     cur_id_list[2] += 1
@@ -51,32 +74,73 @@ def new_get_content(dir, id, show_length=300):
             s_id = int(doc.get("id").split(".")[2])
             if s_id > s_id_max:
                 s_id_max = s_id
-        para_text = ""
+        para_info = []
         while cur_id_list[2] <= s_id_max:
             query = TermQuery(Term("id", ".".join([str(x) for x in cur_id_list])))
             hit = searcher.search(query, 1)
             doc = searcher.doc(hit.scoreDocs[0].doc)
-            para_text += doc.get("text")
+            info_dict = {}
+            for field_info in doc.getFields():
+                info_dict[field_info.name()] = field_info.stringValue()
+            para_info.append(info_dict)
+            # para_text += doc.get("text")
             cur_id_list[2] += 1
-        text_next.append(para_text)
+        text_next.append(para_info)
         cur_id_list[2] = 1
         cur_id_list[1] += 1
     if len(text_next) > 0 and list_text_len(text_next) >= show_length:
-        text_next[-1] = text_next[-1][:len(text_next[-1])-(list_text_len(text_next)-show_length)]
+        over_count = list_text_len(text_next) - show_length
+        len_count = 0
+        para_count = len(text_next[-1]) - 1
+        new_para = []
+        while True:
+            text = text_next[-1][para_count]["text"]
+            len_count += len(text)
+            if len_count > over_count:
+                text = text[:len_count-over_count]
+                text_next[-1][para_count]["text"] = text
+                break
+            para_count -= 1
+        para_count_new = 0
+        while para_count_new <= para_count:
+            new_para.append(text_next[-1][para_count_new])
+            para_count_new += 1
+        text_next[-1] = new_para
     if len(text_prev) == 0:
-        text_prev = ['']
+        text_prev = []
     if len(text_cur) == 0:
-        text_cur = ['']
+        text_cur = []
     if len(text_next) == 0:
-        text_next = ['']
+        text_next = []
     return {"prev": text_prev, "cur": text_cur, "next": text_next}
 
 
 def list_text_len(text_list: list):
     text_len = 0
-    for text in text_list:
-        text_len += len(text)
+    for item in text_list:
+        for info in item:
+            text_len += len(info["text"])
     return text_len
+
+
+def get_text_from_content(content):
+    [prev, cur, next] = [[], [], []]
+    for para in content["prev"]:
+        para_text = ""
+        for sentence in para:
+            para_text += sentence["text"]
+        prev.append(para_text)
+    for para in content["cur"]:
+        para_text = ""
+        for sentence in para:
+            para_text += sentence["text"]
+        cur.append(para_text)
+    for para in content["next"]:
+        para_text = ""
+        for sentence in para:
+            para_text += sentence["text"]
+        next.append(para_text)
+    return {"prev": prev, "cur": cur, "next": next}
 
 
 def sort_keys(keys):

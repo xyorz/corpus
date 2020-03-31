@@ -5,8 +5,9 @@ from org.apache.lucene.search import IndexSearcher, BooleanQuery, BooleanClause,
 from org.apache.lucene.search.spans import SpanQuery, SpanNearQuery, SpanTermQuery, SpanOrQuery, SpanMultiTermQueryWrapper, SpanNotQuery
 from org.apache.lucene.index import DirectoryReader, Term
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.abspath(__file__ + '../../')))
 from NewPatternCommandParser import CommandParser
-from Content import new_get_content
+from Content import new_get_content, get_text_from_content
 
 
 word_reg = "[\u4E00-\u9FA5\uF900-\uFA2D]"
@@ -15,7 +16,7 @@ index_dir_server = "./function/index/index_ancient"
 
 
 class Searcher(object):
-    def __init__(self, userQuery: CommandParser, directory: str, zh_to_hant_dict=None):
+    def __init__(self, userQuery: str, directory: str, zh_to_hant_dict=None):
         d = SimpleFSDirectory(Paths.get(directory))
         if zh_to_hant_dict:
             self._zh_to_hant_dict = zh_to_hant_dict
@@ -23,9 +24,10 @@ class Searcher(object):
             self._zh_to_hant_dict = {}
         self._dir = directory
         self._search = IndexSearcher(DirectoryReader.open(d))
-        self._userQuery = userQuery
+        self._userQuery = CommandParser(userQuery)
         self._cur_field = None
         self._res = None
+        self._reg = None
 
     def search(self, field):
         s = self._search
@@ -81,57 +83,28 @@ class Searcher(object):
             tq = TermQuery(Term(key, filters[key][0]))
             bq.add(BooleanClause(tq, BooleanClause.Occur.MUST))
         query = bq.build()
-        self._res = s.search(query, 9999)
+        top_docs = s.search(query, 9999)
         self._cur_field = field
-        return self
 
-    def get_by_page(self, page_num=0, page_size=30, length_tup=(30, 30)):
-        u = self._userQuery
-        s = self._search
-        d = self._dir
-        zh_to_hant_dict = self._zh_to_hant_dict
-        top_docs = self._res
-        info = u.getFlagsInfo()
-        flags_list = u.getFlagsList()
-        reg = ""
-        mem = []
-        for flag in flags_list:
-            if flag["type"] == "word":
-                word_hant_reg = ""
-                w_hant_reg = ""
-                for w in flag["content"]:
-                    w_hant_reg += "[" + w
-                    if w in zh_to_hant_dict:
-                        for hant in zh_to_hant_dict[w]:
-                            w_hant_reg += hant
-                    w_hant_reg += "]"
-                word_hant_reg += w_hant_reg
-                reg += word_hant_reg
-            else:
-                f_info = info[flag["content"]]
-                op = f_info["op"]
-                num = f_info["num"]
-                if flag["content"] not in mem:
-                    mem.append(flag["content"])
-                    if op == "<":
-                        reg += "(" + word_reg + "{1," + str(num[0]) + "})"
-                    elif op == "-":
-                        reg += "(" + word_reg + "{" + str(num[0]) + "," + str(num[1]) + "})"
-                    else:
-                        reg += "(" + word_reg + "{" + str(num[0]) + "})"
-                else:
-                    reg += "\\" + str(mem.index(flag["content"]) + 1)
+        reg = get_test_reg(flags_list, info, zh_to_hant_dict)
         doc_id_list = []
-        doc_list = []
         hits = top_docs.scoreDocs
-        total_hits = 0
         for hit in hits:
             doc = s.doc(hit.doc)
             text = doc.get("text")
-            print(reg)
             match_res = re.search(reg, text)
             if match_res:
                 doc_id_list.append(hit.doc)
+        self._res = doc_id_list
+        self._reg = reg
+        return self
+
+    def get_by_page(self, page_num=0, page_size=30, length_tup=(30, 30)):
+        doc_id_list = self._res
+        s = self._search
+        d = self._dir
+        reg = self._reg
+        doc_list = []
         total_hits = len(doc_id_list)
         # 分页
         start_index = page_num * page_size
@@ -144,7 +117,7 @@ class Searcher(object):
             cur_id = doc.get("id")
             r = doc.get("text")
             match_span = re.search(reg, r).span()
-            context = new_get_content(d, cur_id)
+            context = get_text_from_content(new_get_content(d, cur_id))
             prev_len = len(context["prev"][-1])
             str_context = context["prev"][-1] + context["cur"][0] + context["next"][0]
             match_span = (prev_len + match_span[0], prev_len + match_span[1])
@@ -158,8 +131,70 @@ class Searcher(object):
             else:
                 right = str_context[match_span[1]: match_span[1] + length_tup[1]]
             doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id})
-        return {"total": total_hits, "doc_list": doc_list}
-            
+        return {"total": total_hits, "doc_list": doc_list, "regexps": [reg]}
+
+    def get_result_statistics_by_keyword(self):
+        doc_ids = self._res
+        # print(doc_ids)
+        s = self._search
+        reg = self._reg
+        res_dict = {}
+        for doc_id in doc_ids:
+            doc = s.doc(doc_id)
+            text = doc.get("text")
+            key_word = re.search(reg, text).group()
+            if key_word:
+                if key_word in res_dict.keys():
+                    res_dict[key_word] += 1
+                else:
+                    res_dict[key_word] = 1
+        return res_dict
+
+    def get_result_statistics_by_field(self, field):
+        doc_ids = self._res
+        s = self._search
+        res_dict = {}
+        for doc_id in doc_ids:
+            doc = s.doc(doc_id)
+            field_val = doc.get(field)
+            if field_val:
+                if field_val in res_dict.keys():
+                    res_dict[field_val] += 1
+                else:
+                    res_dict[field_val] = 1
+        return res_dict
+
+
+def get_test_reg(flags_list, flags_info, zh_to_hant_dict):
+    reg = ""
+    mem = []
+    for flag in flags_list:
+        if flag["type"] == "word":
+            word_hant_reg = ""
+            w_hant_reg = ""
+            for w in flag["content"]:
+                w_hant_reg += "[" + w
+                if w in zh_to_hant_dict:
+                    for hant in zh_to_hant_dict[w]:
+                        w_hant_reg += hant
+                w_hant_reg += "]"
+            word_hant_reg += w_hant_reg
+            reg += word_hant_reg
+        else:
+            f_info = flags_info[flag["content"]]
+            op = f_info["op"]
+            num = f_info["num"]
+            if flag["content"] not in mem:
+                mem.append(flag["content"])
+                if op == "<":
+                    reg += "(" + word_reg + "{1," + str(num[0]) + "})"
+                elif op == "-":
+                    reg += "(" + word_reg + "{" + str(num[0]) + "," + str(num[1]) + "})"
+                else:
+                    reg += "(" + word_reg + "{" + str(num[0]) + "})"
+            else:
+                reg += "\\" + str(mem.index(flag["content"]) + 1)
+    return reg
 
 
 def initVM():
@@ -171,11 +206,12 @@ def initVM():
 
 
 if __name__ == '__main__':
-    uc = "(V=1)先儒(K<5)釋不"
+    # uc = "(V=1)先儒(K<5)釋不"
     initVM()
     # uc = "基立而後可大成也"
+    uc = "好"
     st = time.time()
     ucp = CommandParser(uc)
-    Searcher(ucp, index_dir).search('text').get_by_page()
+    print(Searcher(ucp, index_dir).search('text').get_result_statistics_by_field("dynasty"))
     et = time.time()
     print('const:' + str(et - st))
