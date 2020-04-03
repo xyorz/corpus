@@ -17,8 +17,6 @@ from dmdb.models import UserAuthorsInfoPreset
 from dmdb.models import User
 from dmdb.models import ZhToHant
 
-import function.operation.hant_search as hant_search
-
 sys.path.append("../..")
 lock = threading.Lock()
 
@@ -26,7 +24,12 @@ lock = threading.Lock()
 
 modern_index_dir = './function/index/index_modern'
 ancient_index_dir = './function/index/index_ancient'
-zh_to_hant_map = hant_search.get_zh_to_hant_map_from_db(ZhToHant.objects.all())
+zh_to_hant_map = {}
+for r in ZhToHant.objects.all():
+    if r.zh not in zh_to_hant_map:
+        zh_to_hant_map[r.zh] = [r.hant]
+    else:
+        zh_to_hant_map[r.zh].append(r.hant)
 
 # 测试用
 user = 'xyorz'
@@ -163,9 +166,6 @@ def corpus_insert(request):
         try:
             data = json.loads(request.body.decode('utf-8'), encoding='utf-8')
             # 线程锁，lucene只能一个进程同时写入
-            for key in data.keys():
-                if 'detail' in data[key].keys():
-                    data[key]['detail'] = json.dumps({'detail': data[key]['detail']})
             lock.acquire()
             count_key = Var.objects.all().filter(key='document_count').first()
             if not count_key:
@@ -248,6 +248,7 @@ def authors_info_insert(request):
         request_list = body['list']
         user = User.objects.all().filter(id=userId).first()
         insert_ids = []
+        print(2)
         for item in request_list:
             id, name, dynasty, type, color, preset, area = item['id'], item['author'], item['dynasty'], item['type'], item['color'], item['preset'],  item['area']
             detail = ''
@@ -335,6 +336,7 @@ def login(request):
             if user:
                 request.session['username'] = username
                 request.session['password'] = password
+
                 request.session['level'] = user.level
                 return JsonResponse({
                     'info': {

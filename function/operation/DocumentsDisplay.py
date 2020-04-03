@@ -43,61 +43,19 @@ class DocumentData(object):
     def queryForData(self):
         searcher = self._searcher
         query_document = RegexpQuery(Term('id', str(self._id)))
-        hits = searcher.search(query_document, 1)
-        document_id = ''
-        for hit in hits.scoreDocs:
-            doc = searcher.doc(hit.doc)
-            document_id = doc.get('id')
-            document = doc.get('document')
-            author = doc.get('author')
-            dynasty = doc.get('dynasty')
-            type = doc.get('type')
-            color = doc.get('color')
-            area = doc.get('area')
-            zhujie = doc.get('zhujie')
-            if doc.get('detail'):
-                detail = json.dumps(json.loads(doc.get('detail'), encoding='utf-8')['detail'])
-            else:
-                detail = ''
-            if not document:
-                document = ''
-            if not author:
-                author = ''
-            if not dynasty:
-                dynasty = ''
-            if not type:
-                type = ''
-            self._resDict[document_id] = {'document': document, 'author': author, 'dynasty': dynasty, 'type': type, 'color': color, 'area': area, 'detail': detail, 'zhujie': zhujie}
+        top_docs_doc = searcher.search(query_document, 1)
+        document_id = str(self._id)
+        res_dict = {}
         query_section = RegexpQuery(Term('id', document_id+'\.[0-9]+'))
-        hits = searcher.search(query_section, 99999)
-        for hit in hits.scoreDocs:
-            doc = searcher.doc(hit.doc)
-            section_id = doc.get('id')
-            section = doc.get('section')
-            author = doc.get('author')
-            dynasty = doc.get('dynasty')
-            type = doc.get('type')
-            color = doc.get('color')
-            area = doc.get('area')
-            zhujie = doc.get('zhujie')
-            if doc.get('detail'):
-                detail = json.dumps(json.loads(doc.get('detail'), encoding='utf-8')['detail'])
-            else:
-                detail = ''
-            if not section:
-                section = ''
-            if not author:
-                author = ''
-            if not dynasty:
-                dynasty = ''
-            if not type:
-                type = ''
-            self._resDict[section_id] = {'section': section, 'author': author, 'dynasty': dynasty, 'type': type, 'color': color, 'area': area, 'detail': detail, 'zhujie': zhujie}
+        top_docs_section = searcher.search(query_section, 99999)
         query_paragraph = RegexpQuery(Term('id', document_id+'\.[0-9]+\.[0-9]+'))
-        hs = searcher.search(query_paragraph, 99999)
-        for h in hs.scoreDocs:
-            doc = searcher.doc(h.doc)
-            paragraph_id = doc.get('id')
+        top_docs_sentence = searcher.search(query_paragraph, 99999)
+        top_docs = top_docs_doc.merge(1000000, [top_docs_section, top_docs_doc, top_docs_sentence])
+        for hit in top_docs.scoreDocs:
+            doc = searcher.doc(hit.doc)
+            id = doc.get('id')
+            document = doc.get('document')
+            section = doc.get('section')
             author = doc.get('author')
             dynasty = doc.get('dynasty')
             type = doc.get('type')
@@ -105,19 +63,29 @@ class DocumentData(object):
             color = doc.get('color')
             area = doc.get('area')
             zhujie = doc.get('zhujie')
-            if doc.get('detail'):
-                detail = json.dumps(json.loads(doc.get('detail'), encoding='utf-8')['detail'])
-            else:
-                detail = ''
-            if not author:
-                author = ''
-            if not dynasty:
-                dynasty = ''
-            if not type:
-                type = ''
-            if not text:
-                text = ''
-            self._resDict[paragraph_id] = {'author': author, 'dynasty': dynasty, 'type': type, 'text': text, 'color': color, 'area': area, 'detail': detail, 'zhujie': zhujie}
+            detail = doc.get('detail')
+            res_dict[id] = {}
+            if document:
+                res_dict[id]['document'] = document
+            if section:
+                res_dict[id]['section'] = section
+            if author:
+                res_dict[id]['author'] = author
+            if dynasty:
+                res_dict[id]['dynasty'] = dynasty
+            if type:
+                res_dict[id]['type'] = type
+            if text:
+                res_dict[id]['text'] = text
+            if color:
+                res_dict[id]['color'] = color
+            if area:
+                res_dict[id]['area'] = area
+            if zhujie:
+                res_dict[id]['zhujie'] = zhujie
+            if detail:
+                res_dict[id]['detail'] = detail
+        self._resDict = res_dict
         return self
 
     def result_dict(self):

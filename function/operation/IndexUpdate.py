@@ -42,10 +42,8 @@ class IndexUpdate(object):
         for key, val in self._data.items():
             document = Document()
             document.add(Field('id', key, StringField.TYPE_STORED))
+            # print(key, val)
             for k, v in val.items():
-                if k == "detail":
-                    print("key:" + k)
-                    print("value:" + v)
                 if v:
                     if k == 'text':
                         document.add(Field('text', v, TextField.TYPE_STORED))

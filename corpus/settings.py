@@ -29,7 +29,9 @@ SECRET_KEY = '1comcndg*fo62g+y2exudzc0a3%3=3nytm%hodp_jglz8rn+q7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['120.78.71.214', '127.0.0.1']
+HOST = '127.0.0.1'
+
+ALLOWED_HOSTS = ['120.78.71.214', HOST]
 
 
 # Application definition
@@ -96,10 +98,6 @@ REST_FRAMEWORK = {
     )
 }
 
-JWT_AUTH = {
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1)
-}
-
 URL_REQ_LOGIN = [
     'insert/',
     'manage/',
@@ -110,12 +108,6 @@ URL_REQ_LOGIN = [
     'authors_info/',
     'authors_change_preset/',
     'upload/',
-    'get_user_list/',
-    'delete_user/',
-    'add_user/'
-]
-
-URL_RES_ENCRYPT = [
     'get_user_list/',
     'delete_user/',
     'add_user/'
@@ -151,7 +143,7 @@ DATABASES = {
         'NAME': 'corpus',
         'USER': 'root',
         'PASSWORD': 'shenmadxfy666',
-        'HOST': '120.78.71.214',
+        'HOST': HOST,
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
         # 'CHARSET': 'utf8mb4',

@@ -3,6 +3,7 @@ from java.nio.file import Paths
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.search import IndexSearcher, TermQuery, RegexpQuery
 from org.apache.lucene.index import DirectoryReader, Term
+import json
 sys.path.append(os.path.dirname(os.path.abspath(__file__))+'\\..\\')
 
 
@@ -29,7 +30,6 @@ def new_get_content(dir, id, show_length=300):
             for field_info in doc.getFields():
                 info_dict[field_info.name()] = field_info.stringValue()
             para_info.insert(0, info_dict)
-            # para_text = doc.get("text") + para_text
             cur_id_list[2] -= 1
         text_prev.insert(0, para_info)
         cur_id_list[1] -= 1
@@ -53,6 +53,22 @@ def new_get_content(dir, id, show_length=300):
             len_count += len(text)
             if len_count > over_count:
                 text = text[over_count-prev_len:]
+                # 修注解的offset
+                if "zhujie" in text_prev[0][para_count].keys():
+                    zj = json.loads(text_prev[0][para_count]["zhujie"])
+                    new_zj_offset = zj["offset"][:]
+                    new_zj_content = zj["content"][:]
+                    count = 0
+                    for i in range(len(zj["offset"])):
+                        new_offset = zj["offset"][i] - (over_count-prev_len)
+                        if new_offset < 0:
+                            new_zj_offset.pop(count)
+                            new_zj_content.pop(count)
+                            count -= 1
+                        else:
+                            new_zj_offset[count] = new_offset
+                        count += 1
+                    text_prev[0][para_count]["zhujie"] = json.dumps({"offset": new_zj_offset, "content": new_zj_content})
                 text_prev[0][para_count]["text"] = text
                 break
             para_count += 1
@@ -98,6 +114,19 @@ def new_get_content(dir, id, show_length=300):
             len_count += len(text)
             if len_count > over_count:
                 text = text[:len_count-over_count]
+                # 修注解的offset
+                if "zhujie" in text_next[-1][para_count].keys():
+                    zj = json.loads(text_next[-1][para_count]["zhujie"])
+                    new_zj_offset = zj["offset"][:]
+                    new_zj_content = zj["content"][:]
+                    count = 0
+                    for i in range(len(zj["offset"])):
+                        if zj["offset"][i] >= len(text):
+                            new_zj_offset.pop(count)
+                            new_zj_content.pop(count)
+                            count -= 1
+                        count += 1
+                    text_next[-1][para_count]["zhujie"] = json.dumps({"offset": new_zj_offset, "content": new_zj_content})
                 text_next[-1][para_count]["text"] = text
                 break
             para_count -= 1
