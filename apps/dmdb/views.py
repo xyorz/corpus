@@ -7,9 +7,9 @@ from function.operation.pattern_search.PatternErrorReporter import PatternErrorR
 from function.operation.IndexUpdate import IndexUpdate
 from function.operation import IndexDelete
 from function.operation.DocumentsDisplay import CorpusDocList, DocumentData
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, FileResponse, HttpResponse
 from django.utils.encoding import escape_uri_path
-import lucene, json, sys, threading, traceback
+import lucene, json, sys, threading, traceback, time, datetime
 
 from dmdb.models import AuthorsInfo
 from dmdb.models import Var
@@ -36,39 +36,70 @@ user = 'xyorz'
 userId = 1
 
 
+def get_search(keyword, type='normal'):
+    initVM()
+    if type == 'normal':
+        listener = CorpusErrorReporter(keyword)
+        if listener.error():
+            return {
+                "error": True,
+                "message": listener.getMessage()
+            }
+        results = NSearcher(keyword, ancient_index_dir, zh_to_hant_map) \
+            .search("text")
+    else:
+        listener = PatternErrorReporter(keyword)
+        if listener.error():
+            return {
+                "error": True,
+                "message": listener.getMessage()
+            }
+        results = NPSearcher(keyword, ancient_index_dir, zh_to_hant_map) \
+            .search('text')
+    return results
+
+
 def search(request):
     if request.GET.get('keyword'):
-        initVM()
         left_length = int(request.GET.get('leftLength'))
         right_length = int(request.GET.get('rightLength'))
         type = request.GET.get('type')
         keyword = request.GET.get('keyword')
         page = int(request.GET.get('page')) - 1
         page_size = int(request.GET.get('pageSize'))
-        if type == 'normal':
-            listener = CorpusErrorReporter(keyword)
-            if listener.error():
-                return JsonResponse({
-                    "error": True,
-                    "message": listener.getMessage()
-                })
-            results = NSearcher(keyword, ancient_index_dir, zh_to_hant_map)\
-                .search("text").get_by_page(page, page_size, length_tup=(left_length, right_length))
-        else:
-            listener = PatternErrorReporter(keyword)
-            if listener.error():
-                return JsonResponse({
-                    "error": True,
-                    "message": listener.getMessage()
-                })
-            results = NPSearcher(keyword, ancient_index_dir, zh_to_hant_map)\
-                .search('text').get_by_page(page, page_size, length_tup=(left_length, right_length))
+        search = get_search(keyword, type)
+        results = search.get_by_page(page, page_size, (left_length, right_length))
+        if "total" not in results.keys():
+            return JsonResponse(results)
         return JsonResponse(results)
     else:
         return JsonResponse({
             "error": True,
             "message": "请求格式错误！"
         })
+
+
+def download_result(request):
+    left_length = int(request.GET.get('leftLength'))
+    right_length = int(request.GET.get('rightLength'))
+    type = request.GET.get('type')
+    keyword = request.GET.get('keyword')
+    search = get_search(keyword, type)
+    results = search.get_by_page(0, 10000, (left_length, right_length))
+    if "total" not in results.keys():
+        return JsonResponse(results)
+    file_name = str(datetime.datetime.now().date()) + '-' + str(hash(time.time())) + '.txt'
+    res_str = ""
+    for doc in results["doc_list"]:
+        res_str += "<B>" + doc["document"] + "</B>"
+        res_str += doc["left"]
+        res_str += "<U>" + doc["mid"] + "</U>"
+        res_str += doc["right"]
+    response_file = HttpResponse(res_str)
+    response = FileResponse(response_file)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename={}'.format(escape_uri_path(file_name))
+    return response
 
 
 def download_readme(request):

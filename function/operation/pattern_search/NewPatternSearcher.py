@@ -116,6 +116,7 @@ class Searcher(object):
             doc = s.doc(doc_id_list[i])
             cur_id = doc.get("id")
             r = doc.get("text")
+            document = doc.get("document")
             match_span = re.search(reg, r).span()
             context = get_text_from_content(new_get_content(d, cur_id))
             prev_len = len(context["prev"][-1])
@@ -130,7 +131,7 @@ class Searcher(object):
                 right = str_context[match_span[1]:]
             else:
                 right = str_context[match_span[1]: match_span[1] + length_tup[1]]
-            doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id})
+            doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id, "document": document})
         return {"total": total_hits, "doc_list": doc_list, "regexps": [reg]}
 
     def get_result_statistics_by_keyword(self):

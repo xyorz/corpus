@@ -4,6 +4,7 @@ from dmdb import views
 app_name = 'dmdb'
 urlpatterns = [
     path('n_search/', views.search, name='n_search'),
+    path('download_result/', views.download_result),
     path('download_readme/', views.download_readme, name='download_readme'),
     path('download_backend_readme/', views.download_backend_readme, name='download_backend_readme'),
     path('get_context/', views.new_get_content),
