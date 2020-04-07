@@ -156,6 +156,47 @@ def get_hant_by_zh(request):
     })
 
 
+def get_zh_to_hant_list(request):
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        page = int(body['page'])
+        print(page)
+        all = ZhToHant.objects.all()
+        zh_hants = all[(page-1)*10: page*10]
+        total = len(all)
+        res_list = []
+        for i in zh_hants:
+            res_list.append({'id': i.id, 'zh': i.zh, 'hant': i.hant})
+        return JsonResponse({
+            'list': res_list,
+            'total': total
+        })
+    return JsonResponse({
+        'success': False
+    })
+
+
+def update_zh_to_hant_1(request):
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        type = body['type']
+        if type == 'insert':
+            zh = body['zh']
+            hant = body['hant']
+            ZhToHant(zh=zh, hant=hant).save()
+        elif type == 'update':
+            id = body['id']
+            hant = body['hant']
+            ZhToHant.objects.all().filter(id=id).update(hant=hant)
+        elif type == 'delete':
+            id = body['id']
+            ZhToHant.objects.all().filter(id=id).delete()
+        else:
+            return JsonResponse({'success': False})
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+
 def new_get_content(request):
     initVM()
     body = json.loads(request.body.decode('utf-8'))
@@ -279,7 +320,6 @@ def authors_info_insert(request):
         request_list = body['list']
         user = User.objects.all().filter(id=userId).first()
         insert_ids = []
-        print(2)
         for item in request_list:
             id, name, dynasty, type, color, preset, area = item['id'], item['author'], item['dynasty'], item['type'], item['color'], item['preset'],  item['area']
             detail = ''

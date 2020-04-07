@@ -25,6 +25,8 @@ urlpatterns = [
     path('deactivate/', views.deactivate),
     path('update_zh_to_hant/', views.update_zh_to_hant),
     path('get_hant_by_zh/', views.get_hant_by_zh),
+    path('get_zh_to_hant_list/', views.get_zh_to_hant_list),
+    path('update_zh_to_hant_1/', views.update_zh_to_hant_1),
     path('set_preset/', views.set_preset),
     path('get_preset/', views.get_preset),
 ]
