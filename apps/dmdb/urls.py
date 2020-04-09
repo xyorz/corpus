@@ -12,6 +12,7 @@ urlpatterns = [
     path('insert/', views.corpus_insert, name='insert'),
     path('manage/', views.corpus_manage, name='manage'),
     path('doc/', views.doc, name='doc'),
+    path('get_section/', views.get_section),
     path('delete/', views.corpus_delete),
     path('authors_info_insert/', views.authors_info_insert),
     path('authors_info/', views.authors_info),

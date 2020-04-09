@@ -4,32 +4,27 @@ from org.apache.lucene.index import \
     FieldInfo, IndexWriter, IndexWriterConfig, IndexOptions, DirectoryReader, IndexReader, Term
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.search import IndexSearcher, WildcardQuery
-from org.apache.lucene.search import RegexpQuery
+from org.apache.lucene.search import RegexpQuery, TermQuery, BooleanQuery, BooleanClause
 
 
 class CorpusDocList(object):
     def __init__(self, indexDir: str):
         index_dir = SimpleFSDirectory(Paths.get(indexDir))
         self._searcher = IndexSearcher(DirectoryReader.open(index_dir))
-        self._resList = []
 
     def query(self):
         searcher = self._searcher
+        res_list = []
         query = RegexpQuery(Term('id', '[0-9]+'))
         hits = searcher.search(query, 99999)
         for hit in hits.scoreDocs:
             doc = searcher.doc(hit.doc)
             id = doc.get('id')
             document = doc.get('document')
-            author = doc.get('author')
-            dynasty = doc.get('dynasty')
-            type = doc.get('type')
+            sections = doc.get('sections')
             update_user = doc.get('username')
-            self._resList.append({'id': id, 'document': document, 'author': author, 'dynasty': dynasty, 'type': type, 'update_user': update_user})
-        return self
-
-    def result(self):
-        return self._resList
+            res_list.append({'id': id, 'document': document, 'sections': sections, 'update_user': update_user})
+        return res_list
 
 
 class DocumentData(object):
@@ -40,7 +35,7 @@ class DocumentData(object):
         self._resDict = {}
         self._strDict = ''
 
-    def queryForData(self):
+    def query_doc(self):
         searcher = self._searcher
         query_document = RegexpQuery(Term('id', str(self._id)))
         top_docs_doc = searcher.search(query_document, 1)
@@ -85,6 +80,56 @@ class DocumentData(object):
                 res_dict[id]['zhujie'] = zhujie
             if detail:
                 res_dict[id]['detail'] = detail
+        self._resDict = res_dict
+        return self
+
+    def query_section(self, section):
+        print(section)
+        searcher = self._searcher
+        query_doc = RegexpQuery(Term('id', self._id+'\\..+'))
+        query_section = TermQuery(Term('section', section))
+        query = BooleanQuery.Builder()
+        bc1 = BooleanClause(query_doc, BooleanClause.Occur.MUST)
+        bc2 = BooleanClause(query_section, BooleanClause.Occur.MUST)
+        query = query.add(bc1).add(bc2).build()
+        top_docs = searcher.search(query, 1000000)
+        hits = top_docs.scoreDocs
+        res_dict = {}
+        for hit in hits:
+            doc = searcher.doc(hit.doc)
+            id = doc.get('id')
+            document = doc.get('document')
+            section = doc.get('section')
+            author = doc.get('author')
+            dynasty = doc.get('dynasty')
+            type = doc.get('type')
+            text = doc.get('text')
+            color = doc.get('color')
+            area = doc.get('area')
+            zhujie = doc.get('zhujie')
+            detail = doc.get('detail')
+            res_dict[id] = {}
+            if document:
+                res_dict[id]['document'] = document
+            if section:
+                res_dict[id]['section'] = section
+            if author:
+                res_dict[id]['author'] = author
+            if dynasty:
+                res_dict[id]['dynasty'] = dynasty
+            if type:
+                res_dict[id]['type'] = type
+            if text:
+                res_dict[id]['text'] = text
+            if color:
+                res_dict[id]['color'] = color
+            if area:
+                res_dict[id]['area'] = area
+            if zhujie:
+                res_dict[id]['zhujie'] = zhujie
+            if detail:
+                res_dict[id]['detail'] = detail
+        res_dict[self._id] = {'document': section}
         self._resDict = res_dict
         return self
 

@@ -78,8 +78,12 @@ class Searcher(object):
         if query:
             bq.add(BooleanClause(query, BooleanClause.Occur.MUST))
         for key in filters.keys():
-            tq = TermQuery(Term(key, filters[key][0]))
-            bq.add(BooleanClause(tq, BooleanClause.Occur.MUST))
+            cur_reg = '('
+            for ft in filters[key]:
+                cur_reg += ft + '|'
+            cur_reg = cur_reg[0: -1] + ')'
+            rq = RegexpQuery(Term(key, cur_reg))
+            bq.add(BooleanClause(rq, BooleanClause.Occur.MUST))
         query = bq.build()
         self._res = s.search(query, 100000)
         self._cur_field = field

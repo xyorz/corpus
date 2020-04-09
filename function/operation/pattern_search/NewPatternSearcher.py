@@ -80,8 +80,12 @@ class Searcher(object):
         bq = BooleanQuery.Builder()
         bq.add(BooleanClause(query, BooleanClause.Occur.MUST))
         for key in filters.keys():
-            tq = TermQuery(Term(key, filters[key][0]))
-            bq.add(BooleanClause(tq, BooleanClause.Occur.MUST))
+            cur_reg = '('
+            for ft in filters[key]:
+                cur_reg += ft + '|'
+            cur_reg = cur_reg[0: -1] + ')'
+            rq = RegexpQuery(Term(key, cur_reg))
+            bq.add(BooleanClause(rq, BooleanClause.Occur.MUST))
         query = bq.build()
         top_docs = s.search(query, 9999)
         self._cur_field = field

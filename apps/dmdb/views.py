@@ -56,7 +56,10 @@ def get_search(keyword, type='normal'):
             }
         results = NPSearcher(keyword, ancient_index_dir, zh_to_hant_map) \
             .search('text')
-    return results
+    return {
+        "error": False,
+        "result": results
+    }
 
 
 def search(request):
@@ -67,11 +70,12 @@ def search(request):
         keyword = request.GET.get('keyword')
         page = int(request.GET.get('page')) - 1
         page_size = int(request.GET.get('pageSize'))
-        search = get_search(keyword, type)
-        results = search.get_by_page(page, page_size, (left_length, right_length))
-        if "total" not in results.keys():
+        result = get_search(keyword, type)
+        if not result["error"]:
+            results = result["result"].get_by_page(page, page_size, (left_length, right_length))
             return JsonResponse(results)
-        return JsonResponse(results)
+        else:
+            return JsonResponse(result)
     else:
         return JsonResponse({
             "error": True,
@@ -84,10 +88,10 @@ def download_result(request):
     right_length = int(request.GET.get('rightLength'))
     type = request.GET.get('type')
     keyword = request.GET.get('keyword')
-    search = get_search(keyword, type)
-    results = search.get_by_page(0, 10000, (left_length, right_length))
-    if "total" not in results.keys():
-        return JsonResponse(results)
+    result = get_search(keyword, type)
+    if result["error"]:
+        return JsonResponse(result)
+    results = result["result"].get_by_page(0, 10000, (left_length, right_length))
     file_name = str(datetime.datetime.now().date()) + '-' + str(hash(time.time())) + '.txt'
     res_str = ""
     for doc in results["doc_list"]:
@@ -160,7 +164,6 @@ def get_zh_to_hant_list(request):
     if request.method == 'POST':
         body = json.loads(request.body.decode('utf-8'))
         page = int(body['page'])
-        print(page)
         all = ZhToHant.objects.all()
         zh_hants = all[(page-1)*10: page*10]
         total = len(all)
@@ -261,7 +264,7 @@ def corpus_insert(request):
 
 def corpus_manage(request):
     initVM()
-    doc_list = CorpusDocList(ancient_index_dir).query().result()
+    doc_list = CorpusDocList(ancient_index_dir).query()
     return JsonResponse({
         'list': doc_list
     })
@@ -271,7 +274,19 @@ def doc(request):
     initVM()
     if request.method == 'POST':
         id = json.loads(request.body.decode('utf-8'))['id']
-        data_str = DocumentData(id, ancient_index_dir).queryForData().result_dict()
+        data_str = DocumentData(id, ancient_index_dir).query_doc().result_dict()
+        return JsonResponse({
+            'doc': data_str
+        })
+
+
+def get_section(request):
+    initVM()
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        id = body['id']
+        section = body['section']
+        data_str = DocumentData(id, ancient_index_dir).query_section(section).result_dict()
         return JsonResponse({
             'doc': data_str
         })
@@ -282,7 +297,7 @@ def corpus_delete(request):
     if request.method == 'POST':
         id = json.loads(request.body.decode('utf-8'))['id']
         IndexDelete.delete(ancient_index_dir, id)
-        doc_list = CorpusDocList(ancient_index_dir).query().result()
+        doc_list = CorpusDocList(ancient_index_dir).query()
         return JsonResponse({
             'docList': doc_list
         })
