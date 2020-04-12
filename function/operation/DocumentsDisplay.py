@@ -26,6 +26,15 @@ class CorpusDocList(object):
             res_list.append({'id': id, 'document': document, 'sections': sections, 'update_user': update_user})
         return res_list
 
+    def query_by_doc_id(self, doc_id):
+        searcher = self._searcher
+        query = TermQuery(Term('id', doc_id))
+        hits = searcher.search(query, 1)
+        doc = searcher.doc(hits.scoreDocs[0].doc)
+        document = doc.get('document')
+        sections = json.loads(doc.get('sections'))['list']
+        return {'document': document, 'list': sections}
+
 
 class DocumentData(object):
     def __init__(self, id: str, indexDir: str):

@@ -270,6 +270,14 @@ def corpus_manage(request):
     })
 
 
+def get_sections_by_doc_id(request):
+    initVM()
+    body = json.loads(request.body.decode('utf-8'))
+    doc_id = body['doc_id']
+    result = CorpusDocList(ancient_index_dir).query_by_doc_id(doc_id)
+    return JsonResponse(result)
+
+
 def doc(request):
     initVM()
     if request.method == 'POST':

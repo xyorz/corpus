@@ -116,6 +116,7 @@ class Searcher(object):
             r = doc.get(f)
             cur_id = doc.get("id")
             document = doc.get("document")
+            section = doc.get("section")
             # 寻找检索项关键词位置
             mid_pos = None
             if imp_word:
@@ -143,7 +144,7 @@ class Searcher(object):
                 right = str_context[mid_pos[1]:]
             else:
                 right = str_context[mid_pos[1]: mid_pos[1]+length_tup[1]]
-            doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id, "document": document})
+            doc_list.append({"left": left, "mid": mid, "right": right, "id": cur_id, "document": document, "section": section})
         return {"total": total_hits, "doc_list": doc_list, "keywords": key_word_list}
 
     def get_result_statistics_by_keyword(self):

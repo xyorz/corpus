@@ -11,6 +11,7 @@ urlpatterns = [
     path('get_res_statistics/', views.get_res_statistics),
     path('insert/', views.corpus_insert, name='insert'),
     path('manage/', views.corpus_manage, name='manage'),
+    path('get_sections_by_doc_id/', views.get_sections_by_doc_id),
     path('doc/', views.doc, name='doc'),
     path('get_section/', views.get_section),
     path('delete/', views.corpus_delete),
