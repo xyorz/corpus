@@ -226,6 +226,9 @@ def key_word_list_add_hant(zh_to_hant_dict, key_word_list):
     return key_word_list
 
 
+# def find_mid_pos(content, keys, nums)
+
+
 def initVM():
     vm_env = lucene.getVMEnv()
     if vm_env:

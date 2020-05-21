@@ -93,7 +93,6 @@ class DocumentData(object):
         return self
 
     def query_section(self, section):
-        print(section)
         searcher = self._searcher
         query_doc = RegexpQuery(Term('id', self._id+'\\..+'))
         query_section = TermQuery(Term('section', section))
