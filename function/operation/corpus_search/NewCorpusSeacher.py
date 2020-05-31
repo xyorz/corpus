@@ -89,7 +89,7 @@ class Searcher(object):
         self._cur_field = field
         return self
 
-    def get_by_page(self, page_num=0, page_size=30, length_tup=(30, 30)):
+    def get_by_page(self, page_num=0, page_size=30, length_tup=(30, 30), use_context=True):
         top_docs = self._res
         s = self._search
         f = self._cur_field
@@ -120,9 +120,19 @@ class Searcher(object):
             # 寻找检索项关键词位置
             mid_pos = None
             if imp_word:
-                mid_index = r.find(imp_word)
-                if mid_index >= 0:
-                    mid_pos = [mid_index, mid_index + len(imp_word)]
+                imp_word_reg = ""
+                for w in imp_word:
+                    imp_word_reg += "[" + w
+                    if w in zh_to_hant_dict:
+                        for w_hant in zh_to_hant_dict[w]:
+                            imp_word_reg += w_hant
+                    imp_word_reg += "]"
+                mid_pos = re.search(imp_word_reg, r)
+                if mid_pos:
+                    mid_pos = mid_pos.span()
+                # mid_index = r.find(imp_word)
+                # if mid_index >= 0:
+                #     mid_pos = [mid_index, mid_index + len(imp_word)]
             if not mid_pos:
                 for word in key_word_list:
                     mid_index = r.find(word)
@@ -131,7 +141,10 @@ class Searcher(object):
                         break
             if not mid_pos:
                 mid_pos = [0, 0]
-            context = get_text_from_content(new_get_content(d, cur_id))
+            if use_context:
+                context = get_text_from_content(new_get_content(d, cur_id))
+            else:
+                context = {"prev": [r[0: mid_pos[0]]], "cur": [r[mid_pos[0]: mid_pos[1]]], "next": [r[mid_pos[1]:]]}
             prev_len = len(context["prev"][-1])
             str_context = context["prev"][-1] + context["cur"][0] + context["next"][0]
             mid_pos = (prev_len + mid_pos[0], prev_len + mid_pos[1])

@@ -91,7 +91,7 @@ def download_result(request):
     result = get_search(keyword, type)
     if result["error"]:
         return JsonResponse(result)
-    results = result["result"].get_by_page(0, 10000, (left_length, right_length))
+    results = result["result"].get_by_page(0, 10000, (left_length, right_length), False)
     file_name = str(datetime.datetime.now().date()) + '-' + str(hash(time.time())) + '.txt'
     res_str = ""
     for doc in results["doc_list"]:
@@ -135,6 +135,7 @@ def update_zh_to_hant(request):
         res_list = []
         for i in ZhToHant.objects.all().filter(zh=zh):
             res_list.append({'id': i.id, 'zh': zh, 'hant': i.hant})
+        update_zh_to_hant_cache()
         return JsonResponse({
             'success': True,
             'list': res_list
@@ -196,6 +197,7 @@ def update_zh_to_hant_1(request):
             ZhToHant.objects.all().filter(id=id).delete()
         else:
             return JsonResponse({'success': False})
+        update_zh_to_hant_cache()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
 
@@ -249,8 +251,8 @@ def corpus_insert(request):
             else:
                 count = count_key.value
             IndexUpdate(ancient_index_dir, data, count).update()
-            lock.release()
             Var.objects.all().filter(key='document_count').update(value=int(count)+1)
+            lock.release()
         except json.decoder.JSONDecodeError:
             traceback.print_exc()
             return JsonResponse({
@@ -591,6 +593,16 @@ def authors_change_preset(request):
             'list': get_authors_info()
         })
     return JsonResponse({'success': False})
+
+
+def update_zh_to_hant_cache():
+    global zh_to_hant_map
+    zh_to_hant_map = {}
+    for r in ZhToHant.objects.all():
+        if r.zh not in zh_to_hant_map:
+            zh_to_hant_map[r.zh] = [r.hant]
+        else:
+            zh_to_hant_map[r.zh].append(r.hant)
 
 
 def initVM():
